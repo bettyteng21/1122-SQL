@@ -1,0 +1,71 @@
+// Task1
+LOAD CSV WITH HEADERS FROM 'file:///studentE.csv' AS row
+CREATE (s:Student {
+    _id: row._id,
+    position: row.position,
+    dept: row.dept,
+    year: toInteger(row.year),
+    name: row.name,
+    email: row.email,
+    class: row.class
+});
+
+
+// Task2
+LOAD CSV WITH HEADERS FROM 'file:///student_groupE.csv' AS row
+MATCH (s:Student {_id: row._id})
+MERGE (g:Group {group: toInteger(row.group)})
+MERGE (s)-[:BELONGS_TO]->(g);
+
+
+// Task3
+WITH 'r12921059' AS my_id, '鄧雅文 (TENG, YA-WEN)' AS my_name
+MATCH (me:Student {_id: my_id})-[:BELONGS_TO]->(g:Group)<-[:BELONGS_TO]-(partner:Student)
+WHERE partner._id <> my_id
+RETURN my_name AS MyName, collect(partner.name) AS Partners;
+
+
+// Task4
+MATCH (s:Student)
+WHERE s.dept IS NOT NULL
+MERGE (d:Department {name: s.dept})
+MERGE (s)-[:BELONGS_TO_DEPT]->(d);
+
+
+// Task5
+MATCH (s:Student)-[:BELONGS_TO_DEPT]->(d:Department)
+WHERE s.position <> '旁聽生'
+RETURN d.name AS Department, COUNT(s) AS StudentCount
+ORDER BY StudentCount DESC
+LIMIT 10;
+
+
+// Task6
+MATCH (s:Student)-[:BELONGS_TO]->(g:Group)
+MATCH (s)-[:BELONGS_TO_DEPT]->(d:Department)
+WITH g, COUNT(DISTINCT d.name) AS deptCount
+ORDER BY deptCount DESC
+LIMIT 5
+
+WITH collect(g) AS topGroups
+
+MATCH (s:Student)-[:BELONGS_TO]->(g)
+MATCH (s)-[:BELONGS_TO_DEPT]->(d:Department)
+WHERE g IN topGroups 
+WITH g, collect(DISTINCT d.name) AS departments
+
+ORDER BY g.group ASC
+RETURN g.group AS groupNumber, departments;
+
+
+// Task7
+WITH 'r12921059' AS my_id
+MATCH (me:Student {_id: my_id})-[:BELONGS_TO]->(g:Group)<-[:BELONGS_TO]-(partner:Student)
+
+MATCH (partner)-[:BELONGS_TO_DEPT]->(d:Department)
+
+MATCH (s:Student)-[:BELONGS_TO_DEPT]->(d)
+WITH partner.name AS partnerName, d.name AS deptName, COUNT(s) AS deptSize
+
+RETURN partnerName, deptName, deptSize
+ORDER BY deptSize ASC;
